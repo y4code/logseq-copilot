@@ -9,7 +9,7 @@ const logseqCopilotPopupId = 'logseq-copilot-popup';
 export const zIndex = '2147483647';
 const highlights = CSS.highlights;
 
-const capture = () => {
+const capture = (mode: string) => {
   const selection = getSelection();
   if (selection !== null) {
     const range = selection.getRangeAt(0);
@@ -17,10 +17,17 @@ const capture = () => {
     const clonedSelection = range.cloneContents();
     const turndownService = buildTurndownService();
     selection.empty();
-    Browser.runtime.sendMessage({
-      type: 'clip-with-selection',
-      data: turndownService.turndown(clonedSelection),
-    });
+    if (mode === 'cut-to-lower-level-message') {
+      Browser.runtime.sendMessage({
+        type: 'cut-to-lower-level',
+        data: turndownService.turndown(clonedSelection),
+      });
+    } else {
+      Browser.runtime.sendMessage({
+        type: 'clip-with-selection',
+        data: turndownService.turndown(clonedSelection),
+      });
+    }
   } else {
     clipPage();
   }
@@ -46,8 +53,11 @@ const setHighlight = (range: Range) => {
 
 
 Browser.runtime.onMessage.addListener((request) => {
+  // // debugger;
   if (request.type === 'clip-with-selection' || request.type === 'clip') {
     capture();
+  } else if (request.type === 'cut_to_lower_level_tab_message') {
+    capture('cut-to-lower-level-message');
   } else if (request.type === 'clip-page') {
     clipPage();
   }

@@ -28,16 +28,19 @@ browser.runtime.onConnect.addListener((port) => {
 });
 
 browser.runtime.onMessage.addListener((msg, sender) => {
+  // debugger;
   if (msg.type === 'open-options') {
     browser.runtime.openOptionsPage();
   } else if (msg.type === 'clip-with-selection') {
-    quickCapture(msg.data);
+    quickCapture(msg.data, false);
   } else if (msg.type === 'clip-page') {
-    quickCapture('');
+    quickCapture('', false);
   } else if (msg.type === 'open-page') {
     openPage(msg.url);
   } else if (msg.type === 'change-block-marker') {
     changeBlockMarker(msg.uuid, msg.marker);
+  } else if (msg.type === 'cut-to-lower-level') {
+    quickCapture(msg.data, true);
   } else {
     console.debug(msg);
   }
@@ -69,7 +72,8 @@ const openPage = async (url: string) => {
     await browser.tabs.update(activeTab.id, { url: url });
 };
 
-const quickCapture = async (data: string) => {
+const quickCapture = async (data: string, isCutToLowerLevel: boolean) => {
+  // debugger;
   const tab = await getCurrentTab();
   if (!tab) return;
   const activeTab = tab;
@@ -87,11 +91,15 @@ const quickCapture = async (data: string) => {
     time: now,
   });
 
+  // debugger;
   if (clipNoteLocation === 'customPage') {
     await logseqClient.appendBlock(clipNoteCustomPage, block);
   } else if (clipNoteLocation === 'currentPage') {
     const { name: currentPage } = await logseqClient.getCurrentPage();
     await logseqClient.appendBlock(currentPage, block);
+  } else if (isCutToLowerLevel) {
+    // debugger;
+    await logseqClient.appendBlockInLastBlock(block);
   } else {
     const journalPage = format(now, resp['preferredDateFormat']);
     await logseqClient.appendBlock(journalPage, block);
@@ -164,8 +172,12 @@ browser.runtime.onInstalled.addListener((event) => {
 });
 
 browser.commands.onCommand.addListener((command, tab) => {
+  // // debugger;
   if (command === 'clip' && tab !== undefined) {
     browser.tabs.sendMessage(tab.id!, { type: 'clip' });
+  } else {
+    // capture the command: cut_to_lower_level_command
+    browser.tabs.sendMessage(tab!.id!, { type: 'cut_to_lower_level_tab_message' });
   }
 });
 

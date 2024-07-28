@@ -41,6 +41,9 @@ export type LogseqResponseType<T> = {
 };
 
 export default class LogseqClient {
+
+  private lastInsertedParentLevelBlock: { page: string, uuid: string } | null = null;
+
   private baseFetch = async (method: string, args: any[]) => {
     const config = await getLogseqCopliotConfig();
     const endPoint = new URL(config.logseqHost);
@@ -66,8 +69,10 @@ export default class LogseqClient {
   };
 
   private baseJson = async (method: string, args: any[]) => {
+    // debugger;
     const resp = await this.baseFetch(method, args);
     const data = await resp.json();
+    // debugger;
     console.debug(data);
     return data;
   };
@@ -77,10 +82,41 @@ export default class LogseqClient {
   };
 
   public appendBlock = async (page, content) => {
+    // debugger;
     const resp = await this.baseJson('logseq.Editor.appendBlockInPage', [
       page,
       content,
     ]);
+    // debugger;
+    this.lastInsertedParentLevelBlock = {
+      page,
+      uuid: resp.uuid,
+    };
+    // // debugger
+    return resp;
+  };
+
+  // append as a child of last inserted block
+  // appendBlockInPage: ((page: PageIdentity, content: string, opts?: Partial<{
+  //     properties: {};
+  // }>) => Promise<BlockEntity>) 
+  public appendBlockInLastBlock = async (content: any) => {
+    // debugger;
+    // const resp = await this.baseJson('logseq.Editor.appendBlockInPage', [
+    //   this.lastInsertedParentLevelBlock?.page,
+    //   content,
+    //   {
+    //     parentBlockUuid: this.lastInsertedParentLevelBlock?.uuid,
+    //   }
+    // ]);
+    const resp = await this.baseJson('logseq.Editor.insertBlock', [
+      this.lastInsertedParentLevelBlock?.uuid,
+      content,
+      // {
+      //   parentBlockUuid: this.lastInsertedParentLevelBlock?.uuid,
+      // }
+    ]);
+    // debugger;
     return resp;
   };
 

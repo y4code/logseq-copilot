@@ -57,6 +57,9 @@ const build = (releaseFor) => {
         },
         description: 'Make Clip note',
       },
+      cut_to_lower_level_command: {
+        description: 'Cut to lower level',
+      },
     },
     web_accessible_resources: [
       {
